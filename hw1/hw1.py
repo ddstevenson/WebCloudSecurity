@@ -3,7 +3,7 @@
 # Accepts a token as a command line parameter indicating which site to run the test against.
 
 import requests
-import sys  
+import sys
 from bs4 import BeautifulSoup
 import multiprocessing
 import traceback
@@ -68,13 +68,19 @@ def dispatch_requests(arg):
 
 
 if __name__ == '__main__':
-    s = requests.Session()
-    p = multiprocessing.Pool(40)
-    processing = [x for x in range(10000)]
-    results = p.imap(dispatch_requests, [[x, s] for x in processing])
-    for x in results:
-        if x == 302:
-            exit()
-    p.close()
-    if 302 not in results:
-        print("Sorry, PIN not found.")
+    try:
+        s = requests.Session()
+        p = multiprocessing.Pool(40)
+        processing = [x for x in range(10000)]
+        results = p.imap(dispatch_requests, [[x, s] for x in processing])
+        for x in results:
+            if x == 302:
+                exit()
+        p.close()
+        if 302 not in results:
+            print("Sorry, PIN not found.")
+    except Exception as e:
+        traceback.print_exc()
+        print()
+        exit()
+
