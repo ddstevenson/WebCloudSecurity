@@ -77,6 +77,7 @@ if __name__ == '__main__':
             if x == 302:
                 exit()
         p.close()
+        p.join()
         if 302 not in results:
             print("Sorry, PIN not found.")
     except Exception as e:
