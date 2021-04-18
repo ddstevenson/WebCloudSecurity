@@ -6,6 +6,8 @@ import requests
 import sys  # instructions say to import this lib; but it isn't being used
 from bs4 import BeautifulSoup
 import multiprocessing
+import traceback
+
 
 """
 site = sys.argv[1]
@@ -60,8 +62,14 @@ def dispatch_requests(arg):
     object through which to make the attempt.
     :return: The http code of the response from the PIN form.
     """
-    csrf = get_csrf(arg[1])
-    return try_code(csrf, arg[0], arg[1])
+    try:
+        csrf = get_csrf(arg[1])
+        return try_code(csrf, arg[0], arg[1])
+    except Exception as e:
+        print(f'Caught exception in worker thread while processing {arg}')
+        traceback.print_exc()
+        print()
+        raise e
 
 
 if __name__ == '__main__':
