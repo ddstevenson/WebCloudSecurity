@@ -3,7 +3,7 @@
 # Accepts a token as a command line parameter indicating which site to run the test against.
 
 import requests
-import sys  # instructions say to import this lib; but it isn't being used
+import sys  
 from bs4 import BeautifulSoup
 import multiprocessing
 import traceback
