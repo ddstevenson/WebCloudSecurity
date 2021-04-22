@@ -1,3 +1,4 @@
 env/
 *.pyc
 __pycache__/
+hw2/.idea/
