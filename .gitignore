@@ -2,3 +2,4 @@ env/
 *.pyc
 __pycache__/
 hw2/.idea/
+hw2/keep-alive.py
